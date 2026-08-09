@@ -21,4 +21,4 @@ INSERT INTO product (product_name, product_price) VALUES
 INSERT INTO customer (customer_id, customer_password, customer_balance, customer_point) VALUES
 ('skala01', 'pw1234', 1000000, 100000),
 ('skala02', 'pw1234', 500000, 50000),
-('test', 'test', 10000000, 10000);
+('test', '1234', 10000000, 10000);

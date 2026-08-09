@@ -1,8 +1,8 @@
 package com.sk.skala.shopapi.controller;
 
 import com.sk.skala.shopapi.common.Response;
-import com.sk.skala.shopapi.data.dto.CustomerSession;
-import com.sk.skala.shopapi.data.dto.OrderRequest;
+import com.sk.skala.shopapi.data.dto.CustomerSessionDto;
+import com.sk.skala.shopapi.data.dto.OrderRequestDto;
 import com.sk.skala.shopapi.data.table.Customer;
 import com.sk.skala.shopapi.service.CustomerService;
 
@@ -38,7 +38,7 @@ public class CustomerController {
 
     @PostMapping("/login")
     @Operation(summary = "사용자 로그인", description = "사용자 로그인을 수행합니다")
-    public Response loginCustomer(@RequestBody CustomerSession customerSession) {
+    public Response loginCustomer(@RequestBody CustomerSessionDto customerSession) {
         return customerService.loginCustomer(customerSession);
     }
 
@@ -56,13 +56,13 @@ public class CustomerController {
 
     @PostMapping("/order")
     @Operation(summary = "주문하기", description = "사용자가 상품을 주문합니다")
-    public Response placeOrder(@RequestBody OrderRequest order) {
+    public Response placeOrder(@RequestBody OrderRequestDto order) {
         return customerService.placeOrder(order);
     }
 
     @PostMapping("/cancel")
     @Operation(summary = "주문 취소", description = "사용자가 주문을 취소합니다")
-    public Response cancelOrder(@RequestBody OrderRequest order) {
+    public Response cancelOrder(@RequestBody OrderRequestDto order) {
         return customerService.cancelOrder(order);
     }
 

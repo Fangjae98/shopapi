@@ -5,10 +5,10 @@ import com.sk.skala.shopapi.common.Response;
 import com.sk.skala.shopapi.common.SessionHandler;
 import com.sk.skala.shopapi.common.ShopPolicy;
 import com.sk.skala.shopapi.data.dto.CustomerDto;
-import com.sk.skala.shopapi.data.dto.CustomerSession;
+import com.sk.skala.shopapi.data.dto.CustomerSessionDto;
 import com.sk.skala.shopapi.data.dto.OrderItemDto;
 import com.sk.skala.shopapi.data.dto.OrderListDto;
-import com.sk.skala.shopapi.data.dto.OrderRequest;
+import com.sk.skala.shopapi.data.dto.OrderRequestDto;
 import com.sk.skala.shopapi.data.table.Customer;
 import com.sk.skala.shopapi.data.table.OrderItem;
 import com.sk.skala.shopapi.data.table.Product;
@@ -141,7 +141,7 @@ public class CustomerService {
     // ==========================================================
     // 4. 로그인
     // ==========================================================
-    public Response loginCustomer(CustomerSession customerSession) {
+    public Response loginCustomer(CustomerSessionDto customerSession) {
         if (StringUtil.isAnyEmpty(customerSession.getCustomerId(),
                                   customerSession.getCustomerPassword())) {
             throw new ParameterException("customerId", "customerPassword");
@@ -246,7 +246,7 @@ public class CustomerService {
     // 8. 상품 주문 — 포인트 결제 + 현금 결제 + 적립
     // ==========================================================
     @Transactional
-    public Response placeOrder(OrderRequest order) {
+    public Response placeOrder(OrderRequestDto order) {
         // 1) 입력값 검증
         if (order.getProductId() == null || order.getQuantity() == null || order.getQuantity() <= 0) {
             throw new ParameterException("productId", "quantity");
@@ -254,7 +254,8 @@ public class CustomerService {
 
         // 2) 로그인한 고객 · 상품 조회
         String customerId = sessionHandler.getCurrentCustomerId();
-        Customer customer = customerRepository.findByCustomerId(customerId)
+        // 비관적 lock 걸기(동시 주문 발생 시 사고 방지)
+        Customer customer = customerRepository.findWithLockByCustomerId(customerId)
                 .orElseThrow(() -> new ResponseException(
                         Error.DATA_NOT_FOUND, "고객을 찾을 수 없습니다: " + customerId));
 
@@ -324,7 +325,7 @@ public class CustomerService {
     // 9. 주문 취소 — 비율만큼 환급하고 적립분은 회수
     // ==========================================================
     @Transactional
-    public Response cancelOrder(OrderRequest order) {
+    public Response cancelOrder(OrderRequestDto order) {
         if (order.getProductId() == null || order.getQuantity() == null || order.getQuantity() <= 0) {
             throw new ParameterException("productId", "quantity");
         }

@@ -12,13 +12,35 @@ spring:
   h2:
     console:
       enabled: true
-shop:
-  initial-balance: 10000      # 가입 시 초기 자본
-  signup-point-rate: 0.10       # 초기 자본의 10%를 포인트로
-  earn-point-rate: 0.05         # 결제액의 5%를 포인트로 적립
 
 management:
   endpoints:
     web:
       exposure:
         include: "*"
+
+# 설정 값 추가
+shop:
+  initial-balance: 10000        # 가입 시 초기 자본
+  signup-point-rate: 0.10       # 초기 자본의 10%를 포인트로
+  earn-point-rate: 0.05         # 결제액의 5%를 포인트로 적립
+
+# 세션 보안
+server:
+  servlet:
+    session:
+      timeout: 30m                # 30분간 활동 없으면 자동 로그아웃
+      tracking-modes: cookie      # URL에 세션ID 노출 차단 (주소를 공유해 공유하는 순간 세션이 넘어감)
+      cookie:
+        name: SHOP_SESSION        # 서버 종류를 감추기 위해 기본 이름(JSESSIONID) 변경
+        http-only: true           # 자바스크립트 접근 차단 (XSS 방어)
+        secure: false             # HTTPS 배포 시 true로 변경
+        same-site: lax            # 외부 사이트에서 온 요청에 쿠키 미첨부 (CSRF 방어)
+
+# AOP log 저장
+logging:
+  file:
+    name: logs/shop-api.log
+  logback:
+    rollingpolicy:
+      max-history: 7        # 7일치만 보관

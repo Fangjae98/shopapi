@@ -19,7 +19,14 @@ public class SessionHandler {
 
     // 로그인 성공 시 세션에 고객 ID 저장
     public void storeAccessToken(String customerId) {
-        getRequest().getSession(true).setAttribute(SESSION_KEY, customerId);
+        HttpServletRequest request = getRequest();
+
+        // 세션 고정(Session Fixation) 공격 방어 : 로그인 전에 쓰던 세션이 있으면 ID를 새로 발급받아 기존 ID를 무효화한다.
+        if (request.getSession(false) != null) {
+            request.changeSessionId();
+        }
+
+        request.getSession(true).setAttribute(SESSION_KEY, customerId);
     }
 
     // 현재 요청의 세션에서 로그인한 고객 ID를 꺼낸다
