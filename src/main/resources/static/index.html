@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SKALA SHOP</title>
+<style>
+  :root{
+    --paper:#F2F4F7;
+    --card:#FFFFFF;
+    --ink:#151A21;
+    --ink-soft:#3C4757;
+    --muted:#6C7788;
+    --line:#E1E5EC;
+    --line-soft:#EDF0F4;
+
+    --sk:#E8112D;          /* SKALA 레드 : 주요 동작 */
+    --cash:#1F2937;        /* 잔액(현금) */
+    --point:#B7791F;       /* 포인트 */
+    --point-bg:#FDF6E7;
+    --ok:#12855A;
+    --bad:#C4322B;
+
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard",system-ui,sans-serif;
+    --shadow:0 1px 2px rgba(21,26,33,.05), 0 8px 24px rgba(21,26,33,.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--sans); font-size:14px; line-height:1.55;
+  }
+  button{font-family:inherit;}
+  :focus-visible{outline:2px solid var(--sk); outline-offset:2px;}
+
+  /* 숫자는 등폭 + 통화별 색 */
+  .cash{font-family:var(--mono); color:var(--cash); font-weight:600; font-variant-numeric:tabular-nums;}
+  .point{font-family:var(--mono); color:var(--point); font-weight:600; font-variant-numeric:tabular-nums;}
+  .unit{font-size:.82em; font-weight:500; opacity:.7;}
+
+  /* ============ 화면 전환 ============ */
+  .view{display:none;}
+  .view.on{display:block;}
+
+  /* ============ 로그인 ============ */
+  #loginView{
+    min-height:100vh; display:none; align-items:center; justify-content:center;
+    padding:24px; background:
+      radial-gradient(1100px 520px at 50% -10%, #FFE8EB 0%, transparent 62%),
+      var(--paper);
+  }
+  #loginView.on{display:flex;}
+  .gate{width:100%; max-width:380px;}
+  .gate .mark{
+    font-size:30px; font-weight:800; letter-spacing:-.035em;
+    text-align:center; margin-bottom:4px;
+  }
+  .gate .mark em{color:var(--sk); font-style:normal;}
+  .gate .tag{
+    text-align:center; color:var(--muted); font-size:12.5px;
+    margin-bottom:26px;
+  }
+  .gate .stack{display:grid; gap:14px; margin-bottom:18px;}
+
+  label{display:block; font-size:11.5px; font-weight:700; color:var(--muted); margin-bottom:5px;}
+  input[type=text],input[type=password],input[type=number],input[type=search]{
+    width:100%; padding:9px 12px; font-size:14px; font-family:inherit;
+    border:1px solid #CFD5DE; border-radius:8px; background:#fff; color:var(--ink);
+  }
+  input:focus{outline:2px solid var(--sk); outline-offset:-1px; border-color:transparent;}
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    padding:9px 16px; font-size:13px; font-weight:600;
+    border:1px solid transparent; border-radius:8px; cursor:pointer;
+    background:var(--ink); color:#fff; white-space:nowrap;
+  }
+  .btn:hover{opacity:.86;}
+  .btn.primary{background:var(--sk);}
+  .btn.line{background:#fff; color:var(--ink-soft); border-color:#CFD5DE;}
+  .btn.warn{background:#fff; color:var(--bad); border-color:#EAC3C1;}
+  .btn.sm{padding:5px 11px; font-size:12px; border-radius:6px;}
+
+  .seed{
+    margin-top:16px; padding-top:14px; border-top:1px dashed var(--line);
+    font-size:11.5px; color:var(--muted); font-family:var(--mono); text-align:center;
+  }
+
+  /* ============ 헤더 ============ */
+  .head{
+    background:var(--card); border-bottom:1px solid var(--line);
+    padding:0 20px; height:58px;
+    display:grid; grid-template-columns:150px minmax(0,1fr) auto; align-items:center; gap:16px;
+    position:sticky; top:0; z-index:20;
+  }
+  .head .mark{font-size:16px; font-weight:800; letter-spacing:-.03em; cursor:pointer;}
+  .head .mark em{color:var(--sk); font-style:normal;}
+  .searchwrap{justify-self:center; width:100%; max-width:440px; position:relative;}
+  .searchwrap input{padding-left:34px; border-radius:20px; background:#F6F7F9;}
+  .searchwrap svg{
+    position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    width:14px; height:14px; stroke:var(--muted); fill:none; stroke-width:2;
+  }
+  .head .tools{display:flex; align-items:center; gap:8px;}
+  @media (max-width:760px){
+    .head{grid-template-columns:1fr auto; height:auto; padding:10px 14px; gap:10px;}
+    .searchwrap{grid-column:1/-1; max-width:none;}
+  }
+
+  /* 잔액/포인트 칩 */
+  .purse{
+    display:flex; align-items:center; gap:12px; padding:5px 12px;
+    border:1px solid var(--line); border-radius:20px; background:#FBFCFD;
+    font-size:12.5px;
+  }
+  .purse .sep{width:1px; height:14px; background:var(--line);}
+  @media (max-width:980px){ .purse{display:none;} }
+
+  /* ============ 본문 ============ */
+  .page{max-width:1080px; margin:0 auto; padding:22px 20px 60px;}
+  .bar{display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;}
+  .bar h1{margin:0; font-size:18px; font-weight:800; letter-spacing:-.02em;}
+  .bar .sp{margin-left:auto;}
+  .bar .note{color:var(--muted); font-size:12px;}
+
+  .panel{
+    background:var(--card); border:1px solid var(--line);
+    border-radius:12px; overflow:hidden; margin-bottom:16px;
+  }
+  .panel > header{
+    padding:12px 16px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  .panel > header h2{margin:0; font-size:13.5px; font-weight:700;}
+  .panel > header .sp{margin-left:auto;}
+  .panel .body{padding:16px;}
+
+  table{width:100%; border-collapse:collapse;}
+  th,td{padding:11px 16px; text-align:left; border-bottom:1px solid var(--line-soft); font-size:13.5px;}
+  th{font-size:10.5px; color:var(--muted); letter-spacing:.07em; text-transform:uppercase; background:#F8F9FB;}
+  td.r, th.r{text-align:right;}
+  tbody tr:last-child td{border-bottom:0;}
+  tbody tr:hover{background:#FBFCFD;}
+  .cellbtns{display:flex; gap:6px; justify-content:flex-end;}
+  .blank{padding:34px 16px; text-align:center; color:var(--muted); font-size:13px;}
+
+  .pager{
+    display:flex; align-items:center; gap:10px; padding:10px 16px;
+    border-top:1px solid var(--line); background:#F8F9FB;
+    font-family:var(--mono); font-size:11px; color:var(--muted);
+  }
+  .pager .sp{margin-left:auto;}
+
+  /* 내 정보 지갑 */
+  .wallet{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media (max-width:560px){ .wallet{grid-template-columns:1fr;} }
+  .wallet .box{
+    border:1px solid var(--line); border-radius:10px; padding:16px 18px; background:#fff;
+  }
+  .wallet .box.pt{background:var(--point-bg); border-color:#F0DFBB;}
+  .wallet .box .k{font-size:11.5px; font-weight:700; color:var(--muted); margin-bottom:6px;}
+  .wallet .box .val{font-size:26px; letter-spacing:-.02em;}
+
+  /* ============ 모달 ============ */
+  .scrim{
+    position:fixed; inset:0; background:rgba(18,22,28,.42);
+    display:none; align-items:center; justify-content:center; padding:20px; z-index:40;
+  }
+  .scrim.on{display:flex;}
+  .modal{
+    background:var(--card); border-radius:14px; box-shadow:var(--shadow);
+    width:100%; max-width:480px; max-height:86vh; display:flex; flex-direction:column;
+  }
+  .modal.wide{max-width:860px;}
+  .modal > header{
+    padding:16px 20px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:10px;
+  }
+  .modal > header h3{margin:0; font-size:15px; font-weight:800; letter-spacing:-.02em;}
+  .modal > header .x{
+    margin-left:auto; background:none; border:0; font-size:20px; line-height:1;
+    color:var(--muted); cursor:pointer; padding:2px 6px; border-radius:6px;
+  }
+  .modal > header .x:hover{background:#F1F3F6;}
+  .modal .body{padding:20px; overflow-y:auto;}
+  .modal > footer{
+    padding:14px 20px; border-top:1px solid var(--line);
+    display:flex; gap:8px; justify-content:flex-end; background:#FAFBFC;
+    border-radius:0 0 14px 14px;
+  }
+  .stack{display:grid; gap:14px;}
+  .duo{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+
+  /* ---- 시그니처 : 결제 분할 바 ---- */
+  .checkout{
+    border:1px solid var(--line); border-radius:10px; padding:16px; background:#FBFCFD;
+  }
+  .checkout .total{display:flex; align-items:baseline; gap:8px; margin-bottom:14px;}
+  .checkout .total .k{font-size:12px; color:var(--muted); font-weight:700;}
+  .checkout .total .val{font-size:22px; margin-left:auto;}
+
+  .split{
+    display:flex; height:12px; border-radius:6px; overflow:hidden;
+    background:#E6E9EE; margin-bottom:10px;
+  }
+  .split .segP{background:var(--point);}
+  .split .segC{background:var(--cash);}
+  @media (prefers-reduced-motion:no-preference){
+    .split .segP,.split .segC{transition:width .18s ease;}
+  }
+  .legend{display:flex; gap:16px; font-size:12px; margin-bottom:4px; flex-wrap:wrap;}
+  .legend .i{display:flex; align-items:center; gap:6px;}
+  .legend .sw{width:9px; height:9px; border-radius:2px;}
+  .legend .sw.p{background:var(--point);}
+  .legend .sw.c{background:var(--cash);}
+
+  .toggle{display:flex; align-items:center; gap:8px; margin-bottom:12px;}
+  .toggle input{width:15px; height:15px; accent-color:var(--point);}
+  .toggle label{margin:0; font-size:13px; color:var(--ink); font-weight:600;}
+
+  input[type=range]{width:100%; accent-color:var(--point); margin:2px 0 6px;}
+
+  .earn{
+    margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);
+    font-size:12.5px; color:var(--muted); display:flex; align-items:center; gap:6px;
+  }
+  .earn .sp{margin-left:auto;}
+
+  /* ---- 관리자 ---- */
+  .tabs{display:flex; gap:4px; padding:0 20px; border-bottom:1px solid var(--line); background:#FAFBFC;}
+  .tab{
+    padding:11px 14px; font-size:13px; font-weight:700; color:var(--muted);
+    background:none; border:0; border-bottom:2px solid transparent; cursor:pointer;
+  }
+  .tab.on{color:var(--sk); border-bottom-color:var(--sk);}
+  .tabpane{display:none;}
+  .tabpane.on{display:block;}
+
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr)); gap:12px; margin-bottom:18px;}
+  .stat{border:1px solid var(--line); border-radius:10px; padding:13px 15px;}
+  .stat .k{font-size:11px; font-weight:700; color:var(--muted); margin-bottom:4px;}
+  .stat .val{font-size:19px; letter-spacing:-.02em;}
+
+  /* ---- 요청 로그 ---- */
+  .verb{
+    font-family:var(--mono); font-weight:700; color:#fff; border-radius:3px;
+    padding:1px 6px; font-size:10px; letter-spacing:.04em;
+  }
+  .verb.GET{background:#1B6FD4;} .verb.POST{background:#12855A;}
+  .verb.PUT{background:#B87400;} .verb.DELETE{background:#C4322B;}
+
+  .logbox{max-height:400px; overflow-y:auto; border:1px solid var(--line); border-radius:10px;}
+  .entry{border-bottom:1px solid var(--line-soft);}
+  .entry:last-child{border-bottom:0;}
+  .entry summary{
+    padding:9px 13px; cursor:pointer; display:flex; align-items:center; gap:8px;
+    font-family:var(--mono); font-size:11px; list-style:none;
+  }
+  .entry summary::-webkit-details-marker{display:none;}
+  .entry summary:hover{background:#F8F9FB;}
+  .entry .path{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted);}
+  .entry .code{font-weight:700;}
+  .entry .code.ok{color:var(--ok);} .entry .code.bad{color:var(--bad);}
+  .entry .ms{color:#9AA4B2;}
+  .entry pre{
+    margin:0; padding:10px 13px 14px; background:#101720; color:#C9E7CA;
+    font-family:var(--mono); font-size:10.5px; line-height:1.5;
+    white-space:pre-wrap; word-break:break-all; max-height:230px; overflow:auto;
+  }
+
+  /* ---- 토스트 ---- */
+  #toast{
+    position:fixed; left:50%; bottom:28px; transform:translateX(-50%) translateY(14px);
+    background:var(--ink); color:#fff; padding:11px 18px; border-radius:9px;
+    font-size:13px; font-weight:600; box-shadow:var(--shadow);
+    opacity:0; pointer-events:none; z-index:60; max-width:90vw; text-align:center;
+  }
+  #toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
+  #toast.bad{background:var(--bad);}
+  @media (prefers-reduced-motion:no-preference){
+    #toast{transition:opacity .2s ease, transform .2s ease;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ==========================================================
+     화면 1 · 로그인
+========================================================== -->
+<div class="view on" id="loginView">
+  <div class="gate">
+    <div class="mark">SKALA <em>SHOP</em></div>
+    <div class="tag">포인트로 사고, 사면 다시 쌓이는 쇼핑몰</div>
+
+    <div class="panel" style="margin:0">
+      <div class="body">
+        <div class="stack">
+          <div>
+            <label for="gid">아이디</label>
+            <input type="text" id="gid" value="skala01" autocomplete="username">
+          </div>
+          <div>
+            <label for="gpw">비밀번호</label>
+            <input type="password" id="gpw" value="pw1234" autocomplete="current-password">
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn primary" style="flex:2" onclick="login()">로그인</button>
+          <button class="btn line" style="flex:1" onclick="signup()">가입</button>
+        </div>
+        <div class="seed">skala01 / pw1234 · skala02 / pw1234 · testuser / test1234</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================
+     화면 2 · 메인
+========================================================== -->
+<div class="view" id="appView">
+
+  <header class="head">
+    <div class="mark" onclick="goShop()">SKALA <em>SHOP</em></div>
+
+    <div class="searchwrap">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="search" id="q" placeholder="상품 검색" oninput="renderProducts()">
+    </div>
+
+    <div class="tools">
+      <div class="purse">
+        <span>잔액 <span class="cash" id="hBalance">0</span><span class="unit"> 원</span></span>
+        <span class="sep"></span>
+        <span>포인트 <span class="point" id="hPoint">0</span><span class="unit"> P</span></span>
+      </div>
+      <button class="btn line sm" onclick="goMe()">내 정보</button>
+      <button class="btn line sm" onclick="openAdmin()">관리자</button>
+      <button class="btn line sm" onclick="logout()">로그아웃</button>
+    </div>
+  </header>
+
+  <!-- ---- 상점 ---- -->
+  <div class="page view on" id="shopView">
+    <div class="bar">
+      <h1>판매 상품</h1>
+      <span class="note" id="shopNote"></span>
+      <span class="sp"></span>
+      <button class="btn line sm" onclick="loadProducts()">새로고침</button>
+      <button class="btn primary sm" onclick="openProductNew()">상품 등록</button>
+    </div>
+
+    <div class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th class="r" style="width:56px">ID</th>
+            <th>상품명</th>
+            <th class="r" style="width:120px">가격</th>
+            <th class="r" style="width:110px">적립 예정</th>
+            <th style="width:212px"></th>
+          </tr>
+        </thead>
+        <tbody id="productRows"></tbody>
+      </table>
+      <div class="pager">
+        <button class="btn line sm" onclick="movePage(-1)">이전</button>
+        <button class="btn line sm" onclick="movePage(1)">다음</button>
+        <span id="pageInfo">offset=0 count=10</span>
+        <span class="sp"></span>
+        <span id="totalInfo">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- 내 정보 ---- -->
+  <div class="page view" id="meView">
+    <div class="bar">
+      <h1>내 정보</h1>
+      <span class="sp"></span>
+      <button class="btn line sm" onclick="goShop()">쇼핑 계속하기</button>
+      <button class="btn primary sm" onclick="openProfile()">정보 수정</button>
+    </div>
+
+    <div class="panel">
+      <header><h2>계정</h2><span class="sp"></span><span class="note" id="meId"></span></header>
+      <div class="body">
+        <div class="wallet">
+          <div class="box">
+            <div class="k">보유 잔액</div>
+            <div class="val cash"><span id="meBalance">0</span><span class="unit"> 원</span></div>
+          </div>
+          <div class="box pt">
+            <div class="k">보유 포인트</div>
+            <div class="val point"><span id="mePoint">0</span><span class="unit"> P</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <header>
+        <h2>주문 내역</h2>
+        <span class="sp"></span>
+        <button class="btn line sm" onclick="loadMyOrders()">새로고침</button>
+      </header>
+      <table>
+        <thead>
+          <tr>
+            <th>상품명</th>
+            <th class="r" style="width:110px">단가</th>
+            <th class="r" style="width:70px">수량</th>
+            <th class="r" style="width:120px">합계</th>
+            <th style="width:172px"></th>
+          </tr>
+        </thead>
+        <tbody id="orderRows"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <header><h2>계정 관리</h2></header>
+      <div class="body">
+        <button class="btn warn sm" onclick="deleteMe()">회원 탈퇴</button>
+        <div style="margin-top:8px; color:var(--muted); font-size:12px;">
+          탈퇴하면 주문 내역도 함께 삭제됩니다.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==========================================================
+     모달 · 주문 (결제 분할 바)
+========================================================== -->
+<div class="scrim" id="orderScrim" onclick="closeOnScrim(event,'orderScrim')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <header>
+      <h3 id="odTitle">주문</h3>
+      <button class="x" onclick="closeModal('orderScrim')" aria-label="닫기">×</button>
+    </header>
+    <div class="body">
+      <div class="duo" style="margin-bottom:16px">
+        <div>
+          <label for="odQty">수량</label>
+          <input type="number" id="odQty" value="1" min="1" oninput="recalc()">
+        </div>
+        <div>
+          <label>단가</label>
+          <div style="padding:9px 0"><span class="cash" id="odPrice">0</span><span class="unit"> 원</span></div>
+        </div>
+      </div>
+
+      <div class="checkout">
+        <div class="total">
+          <span class="k">결제 금액</span>
+          <span class="val cash"><span id="odTotal">0</span><span class="unit"> 원</span></span>
+        </div>
+
+        <div class="toggle">
+          <input type="checkbox" id="odUse" onchange="onUseToggle()">
+          <label for="odUse">포인트로 결제하기</label>
+        </div>
+
+        <div id="odSlider" style="display:none">
+          <input type="range" id="odRange" min="0" value="0" oninput="onRange()">
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
+            <input type="number" id="odPoint" value="0" min="0" oninput="recalc()" style="max-width:140px">
+            <span class="unit">P 사용</span>
+            <span style="margin-left:auto"></span>
+            <button class="btn line sm" onclick="maxPoint()">최대</button>
+          </div>
+        </div>
+
+        <div class="split">
+          <div class="segP" id="barP" style="width:0%"></div>
+          <div class="segC" id="barC" style="width:100%"></div>
+        </div>
+        <div class="legend">
+          <span class="i"><span class="sw p"></span>포인트 <span class="point" id="sumP">0</span><span class="unit"> P</span></span>
+          <span class="i"><span class="sw c"></span>현금 <span class="cash" id="sumC">0</span><span class="unit"> 원</span></span>
+        </div>
+
+        <div class="earn">
+          <span>현금 결제분의 5% 적립</span>
+          <span class="sp"></span>
+          <span>+<span class="point" id="sumE">0</span><span class="unit"> P</span></span>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <button class="btn line" onclick="closeModal('orderScrim')">취소</button>
+      <button class="btn primary" onclick="submitOrder()">주문하기</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ==========================================================
+     모달 · 상품 등록 / 수정
+========================================================== -->
+<div class="scrim" id="productScrim" onclick="closeOnScrim(event,'productScrim')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <header>
+      <h3 id="pdTitle">상품 등록</h3>
+      <button class="x" onclick="closeModal('productScrim')" aria-label="닫기">×</button>
+    </header>
+    <div class="body">
+      <div class="stack">
+        <div>
+          <label for="pdName">상품명</label>
+          <input type="text" id="pdName" placeholder="게이밍마우스">
+        </div>
+        <div>
+          <label for="pdPrice">가격 (원)</label>
+          <input type="number" id="pdPrice" placeholder="55000">
+        </div>
+      </div>
+    </div>
+    <footer>
+      <button class="btn line" onclick="closeModal('productScrim')">취소</button>
+      <button class="btn primary" id="pdSave" onclick="saveProduct()">등록</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ==========================================================
+     모달 · 정보 수정
+========================================================== -->
+<div class="scrim" id="profileScrim" onclick="closeOnScrim(event,'profileScrim')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <header>
+      <h3>정보 수정</h3>
+      <button class="x" onclick="closeModal('profileScrim')" aria-label="닫기">×</button>
+    </header>
+    <div class="body">
+      <div class="stack">
+        <div>
+          <label for="pfPw">새 비밀번호</label>
+          <input type="password" id="pfPw" placeholder="바꿀 때만 입력하세요">
+        </div>
+        <div>
+          <label for="pfPoint">포인트 조정 (P)</label>
+          <input type="number" id="pfPoint" placeholder="바꿀 때만 입력하세요">
+        </div>
+        <div>
+          <label for="pfBalance">잔액 조정 (원)</label>
+          <input type="number" id="pfBalance" placeholder="바꿀 때만 입력하세요">
+        </div>
+      </div>
+    </div>
+    <footer>
+      <button class="btn line" onclick="closeModal('profileScrim')">취소</button>
+      <button class="btn primary" onclick="saveProfile()">저장</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ==========================================================
+     모달 · 관리자
+========================================================== -->
+<div class="scrim" id="adminScrim" onclick="closeOnScrim(event,'adminScrim')">
+  <div class="modal wide" role="dialog" aria-modal="true">
+    <header>
+      <h3>관리자</h3>
+      <button class="btn line sm" style="margin-left:12px" onclick="refreshAdmin()">데이터 새로고침</button>
+      <button class="x" onclick="closeModal('adminScrim')" aria-label="닫기">×</button>
+    </header>
+
+    <div class="tabs">
+      <button class="tab on" onclick="tab(this,'tabCustomers')">고객</button>
+      <button class="tab" onclick="tab(this,'tabOrders')">주문 총합</button>
+      <button class="tab" onclick="tab(this,'tabLog')">요청 로그</button>
+    </div>
+
+    <div class="body">
+      <div class="tabpane on" id="tabCustomers">
+        <div class="stats" id="adStats"></div>
+        <div class="panel" style="margin:0">
+          <table>
+            <thead>
+              <tr>
+                <th>아이디</th>
+                <th class="r" style="width:150px">잔액</th>
+                <th class="r" style="width:150px">포인트</th>
+                <th style="width:110px"></th>
+              </tr>
+            </thead>
+            <tbody id="adCustomerRows"><tr><td colspan="4" class="blank">새로고침을 눌러 조회하세요.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tabpane" id="tabOrders">
+        <div class="stats" id="adOrderStats"></div>
+        <div class="panel" style="margin:0">
+          <table>
+            <thead>
+              <tr>
+                <th>고객</th>
+                <th>상품</th>
+                <th class="r" style="width:70px">수량</th>
+                <th class="r" style="width:140px">금액</th>
+              </tr>
+            </thead>
+            <tbody id="adOrderRows"><tr><td colspan="4" class="blank">새로고침을 눌러 집계하세요.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tabpane" id="tabLog">
+        <div class="bar" style="margin-bottom:10px">
+          <span class="note" id="logNote">요청 0건</span>
+          <span class="sp"></span>
+          <button class="btn line sm" onclick="clearLog()">비우기</button>
+        </div>
+        <div class="logbox" id="logBox">
+          <div class="blank">아직 기록된 요청이 없습니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ===================== 상태 ===================== */
+let me = null;
+let products = [];
+let offset = 0, count = 10;
+let logs = [];
+let editingProductId = null;
+let odProduct = null;
+
+const EARN_RATE = 0.05;   // 백엔드 shop.earn-point-rate 와 동일하게 유지
+
+/* ===================== 공통 호출 ===================== */
+async function api(method, path, body) {
+  const t0 = performance.now();
+  let json, httpStatus = 0;
+
+  try {
+    const res = await fetch(path, {
+      method,
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    httpStatus = res.status;
+    json = await res.json();
+  } catch (e) {
+    json = { code: 0, message: '서버에 연결하지 못했습니다.', body: null };
+  }
+
+  logs.unshift({
+    method, path,
+    code: json.code ?? httpStatus,
+    ms: Math.round(performance.now() - t0),
+    payload: json
+  });
+  if (logs.length > 60) logs.pop();
+  renderLog();
+
+  return json;
+}
+
+const ok = r => r && r.code === 200;
+const won = n => Math.round(n || 0).toLocaleString('ko-KR');
+
+/* ===================== 화면 전환 ===================== */
+function show(id) {
+  ['loginView','appView'].forEach(v =>
+    document.getElementById(v).classList.toggle('on', v === id));
+}
+function page(id) {
+  ['shopView','meView'].forEach(v =>
+    document.getElementById(v).classList.toggle('on', v === id));
+  window.scrollTo(0, 0);
+}
+function goShop() { page('shopView'); }
+function goMe() { page('meView'); loadMyOrders(); }
+
+function openModal(id) { document.getElementById(id).classList.add('on'); }
+function closeModal(id) { document.getElementById(id).classList.remove('on'); }
+function closeOnScrim(e, id) { if (e.target.id === id) closeModal(id); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape')
+    document.querySelectorAll('.scrim.on').forEach(s => s.classList.remove('on'));
+});
+
+/* ===================== 토스트 ===================== */
+let toastTimer;
+function toast(msg, bad) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'on' + (bad ? ' bad' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 2800);
+}
+function report(res) {
+  toast(res.message || (ok(res) ? '완료' : '요청 실패'), !ok(res));
+}
+
+/* ===================== 인증 ===================== */
+async function signup() {
+  const res = await api('POST', '/api/customers', {
+    customerId: v('gid'), customerPassword: v('gpw')
+  });
+  report(res);
+}
+
+async function login() {
+  const res = await api('POST', '/api/customers/login', {
+    customerId: v('gid'), customerPassword: v('gpw')
+  });
+  if (!ok(res)) { report(res); return; }
+
+  me = res.body;
+  paintPurse();
+  show('appView');
+  goShop();
+  loadProducts();
+  toast(me.customerId + '님, 환영합니다');
+}
+
+async function logout() {
+  await api('POST', '/api/customers/logout');
+  me = null;
+  products = [];
+  show('loginView');
+}
+
+async function deleteMe() {
+  if (!confirm(me.customerId + ' 계정을 삭제합니다. 주문 내역도 함께 지워집니다.')) return;
+  const res = await api('DELETE', '/api/customers', { customerId: me.customerId });
+  report(res);
+  if (ok(res)) logout();
+}
+
+function paintPurse() {
+  if (!me) return;
+  document.getElementById('hBalance').textContent  = won(me.customerBalance);
+  document.getElementById('hPoint').textContent    = won(me.customerPoint);
+  document.getElementById('meBalance').textContent = won(me.customerBalance);
+  document.getElementById('mePoint').textContent   = won(me.customerPoint);
+  document.getElementById('meId').textContent      = me.customerId;
+}
+
+/* ===================== 상품 ===================== */
+async function loadProducts() {
+  const res = await api('GET', '/api/products/list?offset=' + offset + '&count=' + count);
+  if (!ok(res)) { report(res); return; }
+
+  products = res.body.items || [];
+  document.getElementById('pageInfo').textContent  = 'offset=' + offset + ' count=' + count;
+  document.getElementById('totalInfo').textContent = 'total ' + res.body.totalElements;
+  renderProducts();
+}
+
+function renderProducts() {
+  const q = v('q').toLowerCase();
+  const list = q ? products.filter(p => p.productName.toLowerCase().includes(q)) : products;
+  const tb = document.getElementById('productRows');
+
+  document.getElementById('shopNote').textContent =
+    q ? '"' + v('q') + '" 검색 결과 ' + list.length + '건' : '';
+
+  if (!list.length) {
+    tb.innerHTML = '<tr><td colspan="5" class="blank">' +
+      (q ? '검색 결과가 없습니다.' : '이 페이지에는 상품이 없습니다.') + '</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = list.map(p =>
+    '<tr>' +
+      '<td class="r" style="font-family:var(--mono); color:var(--muted)">' + p.id + '</td>' +
+      '<td>' + esc(p.productName) + '</td>' +
+      '<td class="r"><span class="cash">' + won(p.productPrice) + '</span><span class="unit"> 원</span></td>' +
+      '<td class="r"><span class="point">+' + won(p.productPrice * EARN_RATE) + '</span><span class="unit"> P</span></td>' +
+      '<td><div class="cellbtns">' +
+        '<button class="btn primary sm" onclick="openOrder(' + p.id + ')">주문</button>' +
+        '<button class="btn line sm" onclick="openProductEdit(' + p.id + ')">수정</button>' +
+        '<button class="btn warn sm" onclick="removeProduct(' + p.id + ')">삭제</button>' +
+      '</div></td>' +
+    '</tr>').join('');
+}
+
+function movePage(d) {
+  if (offset + d < 0) return;
+  offset += d;
+  loadProducts();
+}
+
+function openProductNew() {
+  editingProductId = null;
+  document.getElementById('pdTitle').textContent = '상품 등록';
+  document.getElementById('pdSave').textContent  = '등록';
+  document.getElementById('pdName').value  = '';
+  document.getElementById('pdPrice').value = '';
+  openModal('productScrim');
+}
+
+function openProductEdit(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  editingProductId = id;
+  document.getElementById('pdTitle').textContent = '상품 수정 · #' + id;
+  document.getElementById('pdSave').textContent  = '저장';
+  document.getElementById('pdName').value  = p.productName;
+  document.getElementById('pdPrice').value = p.productPrice;
+  openModal('productScrim');
+}
+
+async function saveProduct() {
+  const payload = { productName: v('pdName'), productPrice: Number(v('pdPrice')) };
+  let res;
+  if (editingProductId) {
+    payload.id = editingProductId;
+    res = await api('PUT', '/api/products', payload);
+  } else {
+    res = await api('POST', '/api/products', payload);
+  }
+  report(res);
+  if (ok(res)) { closeModal('productScrim'); loadProducts(); }
+}
+
+async function removeProduct(id) {
+  if (!confirm('상품 ' + id + '번을 삭제합니다.')) return;
+  const res = await api('DELETE', '/api/products', { id: id });
+  report(res);
+  if (ok(res)) loadProducts();
+}
+
+/* ===================== 주문 ===================== */
+function openOrder(id) {
+  odProduct = products.find(p => p.id === id);
+  if (!odProduct) return;
+
+  document.getElementById('odTitle').textContent = odProduct.productName;
+  document.getElementById('odPrice').textContent = won(odProduct.productPrice);
+  document.getElementById('odQty').value   = 1;
+  document.getElementById('odUse').checked = false;
+  document.getElementById('odSlider').style.display = 'none';
+  document.getElementById('odPoint').value = 0;
+
+  recalc();
+  openModal('orderScrim');
+}
+
+function odTotal() {
+  const qty = Math.max(1, Number(v('odQty')) || 1);
+  return odProduct.productPrice * qty;
+}
+
+/* 사용 가능한 포인트 상한 = min(보유 포인트, 결제 금액) */
+function odCap() {
+  return Math.floor(Math.min(me.customerPoint, odTotal()));
+}
+
+function onUseToggle() {
+  const on = document.getElementById('odUse').checked;
+  document.getElementById('odSlider').style.display = on ? 'block' : 'none';
+  if (on) maxPoint();
+  else { document.getElementById('odPoint').value = 0; recalc(); }
+}
+
+function onRange() {
+  document.getElementById('odPoint').value = document.getElementById('odRange').value;
+  recalc();
+}
+
+function maxPoint() {
+  document.getElementById('odPoint').value = odCap();
+  recalc();
+}
+
+/* 결제 구성을 다시 계산하고 분할 바에 반영 */
+function recalc() {
+  if (!odProduct) return;
+
+  const total = odTotal();
+  const cap   = odCap();
+  const using = document.getElementById('odUse').checked;
+
+  let pt = using ? Math.min(Math.max(0, Number(v('odPoint')) || 0), cap) : 0;
+  pt = Math.floor(pt);
+
+  const cash = total - pt;
+  const earn = Math.floor(cash * EARN_RATE);
+
+  const range = document.getElementById('odRange');
+  range.max   = cap;
+  range.value = pt;
+  document.getElementById('odPoint').value = pt;
+
+  document.getElementById('odTotal').textContent = won(total);
+  document.getElementById('sumP').textContent = won(pt);
+  document.getElementById('sumC').textContent = won(cash);
+  document.getElementById('sumE').textContent = won(earn);
+
+  const ratio = total > 0 ? (pt / total) * 100 : 0;
+  document.getElementById('barP').style.width = ratio + '%';
+  document.getElementById('barC').style.width = (100 - ratio) + '%';
+}
+
+async function submitOrder() {
+  const qty      = Math.max(1, Number(v('odQty')) || 1);
+  const usePoint = document.getElementById('odUse').checked;
+  const pt       = Math.floor(Number(v('odPoint')) || 0);
+
+  const payload = { productId: odProduct.id, quantity: qty, usePoint: usePoint };
+  if (usePoint) payload.pointToUse = pt;
+
+  const res = await api('POST', '/api/customers/order', payload);
+  report(res);
+
+  if (ok(res)) {
+    me = res.body;
+    paintPurse();
+    closeModal('orderScrim');
+  }
+}
+
+/* ===================== 내 주문 ===================== */
+async function loadMyOrders() {
+  if (!me) return;
+  const res = await api('GET', '/api/customers/' + encodeURIComponent(me.customerId));
+  const tb = document.getElementById('orderRows');
+  if (!ok(res)) { report(res); return; }
+
+  if (res.body.customerBalance != null) me.customerBalance = res.body.customerBalance;
+  if (res.body.customerPoint   != null) me.customerPoint   = res.body.customerPoint;
+  paintPurse();
+
+  const items = res.body.products || [];
+  if (!items.length) {
+    tb.innerHTML = '<tr><td colspan="5" class="blank">아직 주문한 상품이 없습니다.</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = items.map(p =>
+    '<tr>' +
+      '<td>' + esc(p.productName) + '</td>' +
+      '<td class="r"><span class="cash">' + won(p.productPrice) + '</span><span class="unit"> 원</span></td>' +
+      '<td class="r" style="font-family:var(--mono)">' + p.quantity + '</td>' +
+      '<td class="r"><span class="cash">' + won(p.productPrice * p.quantity) + '</span><span class="unit"> 원</span></td>' +
+      '<td><div class="cellbtns">' +
+        '<button class="btn line sm" onclick="cancelOrder(' + p.productId + ',1)">1개 취소</button>' +
+        '<button class="btn warn sm" onclick="cancelOrder(' + p.productId + ',' + p.quantity + ')">전체</button>' +
+      '</div></td>' +
+    '</tr>').join('');
+}
+
+async function cancelOrder(productId, quantity) {
+  const res = await api('POST', '/api/customers/cancel', { productId: productId, quantity: quantity });
+  report(res);
+  if (ok(res)) {
+    me = res.body;
+    paintPurse();
+    loadMyOrders();
+  }
+}
+
+/* ===================== 정보 수정 ===================== */
+function openProfile() {
+  document.getElementById('pfPw').value      = '';
+  document.getElementById('pfPoint').value   = '';
+  document.getElementById('pfBalance').value = '';
+  openModal('profileScrim');
+}
+
+async function saveProfile() {
+  const payload = { customerId: me.customerId };
+  if (v('pfPw'))      payload.customerPassword = v('pfPw');
+  if (v('pfPoint'))   payload.customerPoint    = Number(v('pfPoint'));
+  if (v('pfBalance')) payload.customerBalance  = Number(v('pfBalance'));
+
+  const res = await api('PUT', '/api/customers', payload);
+  report(res);
+
+  if (ok(res)) {
+    me = res.body;
+    paintPurse();
+    closeModal('profileScrim');
+  }
+}
+
+/* ===================== 관리자 ===================== */
+function openAdmin() { openModal('adminScrim'); refreshAdmin(); }
+
+function tab(btn, paneId) {
+  document.querySelectorAll('#adminScrim .tab').forEach(t => t.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('#adminScrim .tabpane').forEach(p =>
+    p.classList.toggle('on', p.id === paneId));
+}
+
+async function refreshAdmin() {
+  const res = await api('GET', '/api/customers/list?offset=0&count=50');
+  if (!ok(res)) { report(res); return; }
+
+  const list = res.body.items || [];
+
+  /* --- 고객 --- */
+  const totalBalance = list.reduce((s, c) => s + (c.customerBalance || 0), 0);
+  const totalPoint   = list.reduce((s, c) => s + (c.customerPoint   || 0), 0);
+
+  document.getElementById('adStats').innerHTML =
+    '<div class="stat"><div class="k">가입 고객</div><div class="val">' + list.length + '<span class="unit"> 명</span></div></div>' +
+    '<div class="stat"><div class="k">잔액 총합</div><div class="val cash">' + won(totalBalance) + '<span class="unit"> 원</span></div></div>' +
+    '<div class="stat"><div class="k">포인트 총합</div><div class="val point">' + won(totalPoint) + '<span class="unit"> P</span></div></div>';
+
+  document.getElementById('adCustomerRows').innerHTML = list.length
+    ? list.map(c =>
+      '<tr>' +
+        '<td>' + esc(c.customerId) + '</td>' +
+        '<td class="r"><span class="cash">' + won(c.customerBalance) + '</span><span class="unit"> 원</span></td>' +
+        '<td class="r"><span class="point">' + won(c.customerPoint) + '</span><span class="unit"> P</span></td>' +
+        '<td><div class="cellbtns"><button class="btn line sm" onclick="peek(\'' + escAttr(c.customerId) + '\')">주문</button></div></td>' +
+      '</tr>').join('')
+    : '<tr><td colspan="4" class="blank">등록된 고객이 없습니다.</td></tr>';
+
+  /* --- 주문 총합 : 고객별 주문을 모두 조회해 집계 --- */
+  const rows = [];
+  let orderCount = 0, orderAmount = 0, itemCount = 0;
+
+  for (const c of list) {
+    const r = await api('GET', '/api/customers/' + encodeURIComponent(c.customerId));
+    if (!ok(r)) continue;
+    for (const p of (r.body.products || [])) {
+      const amount = p.productPrice * p.quantity;
+      rows.push({ who: c.customerId, name: p.productName, qty: p.quantity, amount: amount });
+      orderCount++;
+      itemCount += p.quantity;
+      orderAmount += amount;
+    }
+  }
+
+  document.getElementById('adOrderStats').innerHTML =
+    '<div class="stat"><div class="k">주문 건수</div><div class="val">' + orderCount + '<span class="unit"> 건</span></div></div>' +
+    '<div class="stat"><div class="k">판매 수량</div><div class="val">' + itemCount + '<span class="unit"> 개</span></div></div>' +
+    '<div class="stat"><div class="k">거래 총액</div><div class="val cash">' + won(orderAmount) + '<span class="unit"> 원</span></div></div>' +
+    '<div class="stat"><div class="k">건당 평균</div><div class="val cash">' + won(orderCount ? orderAmount / orderCount : 0) + '<span class="unit"> 원</span></div></div>';
+
+  document.getElementById('adOrderRows').innerHTML = rows.length
+    ? rows.sort((a, b) => b.amount - a.amount).map(r =>
+      '<tr>' +
+        '<td>' + esc(r.who) + '</td>' +
+        '<td>' + esc(r.name) + '</td>' +
+        '<td class="r" style="font-family:var(--mono)">' + r.qty + '</td>' +
+        '<td class="r"><span class="cash">' + won(r.amount) + '</span><span class="unit"> 원</span></td>' +
+      '</tr>').join('')
+    : '<tr><td colspan="4" class="blank">집계된 주문이 없습니다.</td></tr>';
+}
+
+async function peek(customerId) {
+  await api('GET', '/api/customers/' + encodeURIComponent(customerId));
+  tab(document.querySelectorAll('#adminScrim .tab')[2], 'tabLog');
+}
+
+/* ===================== 요청 로그 ===================== */
+function renderLog() {
+  const box  = document.getElementById('logBox');
+  const note = document.getElementById('logNote');
+  if (!box) return;
+
+  note.textContent = '요청 ' + logs.length + '건';
+
+  if (!logs.length) {
+    box.innerHTML = '<div class="blank">아직 기록된 요청이 없습니다.</div>';
+    return;
+  }
+
+  box.innerHTML = logs.map(l =>
+    '<details class="entry">' +
+      '<summary>' +
+        '<span class="verb ' + l.method + '">' + l.method + '</span>' +
+        '<span class="path">' + esc(l.path) + '</span>' +
+        '<span class="code ' + (l.code === 200 ? 'ok' : 'bad') + '">' + l.code + '</span>' +
+        '<span class="ms">' + l.ms + 'ms</span>' +
+      '</summary>' +
+      '<pre>' + esc(JSON.stringify(l.payload, null, 2)) + '</pre>' +
+    '</details>').join('');
+}
+
+function clearLog() { logs = []; renderLog(); }
+
+/* ===================== 유틸 ===================== */
+function v(id) { return document.getElementById(id).value.trim(); }
+function esc(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function escAttr(s) { return String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+
+['gid','gpw'].forEach(id =>
+  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') login(); }));
+</script>
+</body>
+</html>

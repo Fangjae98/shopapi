@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:skala-shop;LOCK_TIMEOUT=3000   # 비관적 락 최대 대기 3초
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    defer-datasource-initialization: true
+  h2:
+    console:
+      enabled: true
+shop:
+  initial-balance: 10000      # 가입 시 초기 자본
+  signup-point-rate: 0.10       # 초기 자본의 10%를 포인트로
+  earn-point-rate: 0.05         # 결제액의 5%를 포인트로 적립
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
