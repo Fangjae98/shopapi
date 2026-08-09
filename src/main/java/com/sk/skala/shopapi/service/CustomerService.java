@@ -104,7 +104,7 @@ public class CustomerService {
     // ==========================================================
     // 3. 회원가입 — 초기 자본 지급 + 자본의 10%를 포인트로 지급
     // ==========================================================
-    public Response createCustomer(Customer customer) {
+    public Response createCustomer(CustomerSessionDto customer) {
         // 입력값 검증
         if (StringUtil.isAnyEmpty(customer.getCustomerId(), customer.getCustomerPassword())) {
             throw new ParameterException("customerId", "customerPassword");
@@ -156,7 +156,7 @@ public class CustomerService {
                     "아이디 또는 비밀번호가 올바르지 않습니다.");
         }
 
-        // 인증 성공 → JWT 발급 후 쿠키에 저장
+        // 인증 성공
         sessionHandler.storeAccessToken(customer.getCustomerId());
 
         return Response.builder()

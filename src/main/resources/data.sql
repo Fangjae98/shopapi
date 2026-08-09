@@ -17,7 +17,7 @@ INSERT INTO product (product_name, product_price) VALUES
 ('Test', 10000),
 ('Test_delet', 10000);
 
--- customer_balance(자본), customer_point(자본의 10%), version(낙관적 락 초기값)
+-- customer_balance(자본), customer_point(자본의 10%)
 INSERT INTO customer (customer_id, customer_password, customer_balance, customer_point) VALUES
 ('skala01', 'pw1234', 1000000, 100000),
 ('skala02', 'pw1234', 500000, 50000),

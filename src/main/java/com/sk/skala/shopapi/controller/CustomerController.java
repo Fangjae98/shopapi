@@ -32,8 +32,8 @@ public class CustomerController {
 
     @PostMapping
     @Operation(summary = "사용자 생성", description = "새로운 사용자를 생성합니다")
-    public Response createCustomer(@RequestBody Customer customer) {
-        return customerService.createCustomer(customer);
+    public Response createCustomer(@RequestBody CustomerSessionDto request) {
+        return customerService.createCustomer(request);
     }
 
     @PostMapping("/login")
