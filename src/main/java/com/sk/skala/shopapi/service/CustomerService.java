@@ -331,7 +331,7 @@ public class CustomerService {
         }
 
         String customerId = sessionHandler.getCurrentCustomerId();
-        // 비관적 락 : 잔액·포인트를 바꾸는 동안 같은 고객의 다른 주문/취소를 대기시킨다.
+        // 비관적 락 : 잔액, 포인트를 바꾸는 동안 같은 고객의 다른 주문/취소를 대기시킨다.
         Customer customer = customerRepository.findWithLockByCustomerId(customerId)
                 .orElseThrow(() -> new ResponseException(
                         Error.DATA_NOT_FOUND, "고객을 찾을 수 없습니다: " + customerId));

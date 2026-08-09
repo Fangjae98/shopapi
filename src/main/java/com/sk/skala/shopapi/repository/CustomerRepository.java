@@ -14,7 +14,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     boolean existsByCustomerId(String customerId);
 
-    /* 비관적 락(PESSIMISTIC_WRITE)으로 고객 행을 잠근 채 조회한다. 잔액·포인트를 변경하는 주문/취소에서만 사용한다. */
+    /* 비관적 락(PESSIMISTIC_WRITE)으로 고객 행을 잠근 채 조회한다. 잔액, 포인트를 변경하는 주문/취소에서만 사용한다. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Customer> findWithLockByCustomerId(String customerId);
 }
